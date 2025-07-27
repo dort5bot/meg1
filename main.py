@@ -4,7 +4,8 @@
 # ======================================
 
 import logging
-import datetime
+import os
+from dotenv import load_dotenv
 from telegram.ext import ApplicationBuilder
 
 from handlers.io_handler import register_io
@@ -19,18 +20,29 @@ from handlers.whale_handler import register_whale
 
 from keep_alive import keep_alive
 
+# ✅ Logging ayarları
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     level=logging.INFO
 )
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(name)
+
+# ✅ .env dosyasını yükle (lokalde çalıştırırken)
+load_dotenv()
+
+# ✅ Ortam değişkenlerini al (Render'da environment sekmesinden okunur)
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+if not BOT_TOKEN:
+    raise ValueError("❌ BOT_TOKEN bulunamadı! Render Environment veya .env kontrol et.")
 
 def main():
-    keep_alive()  # Render Free ping sistemi
+    # ✅ Render Free için keep_alive servisini çalıştır
+    keep_alive()
 
-    application = ApplicationBuilder().token("YOUR_BOT_TOKEN_HERE").build()
+    # ✅ Telegram botu başlat
+    application = ApplicationBuilder().token(BOT_TOKEN).build()
 
-    # Komut kayıtları
+    # ✅ Komut kayıtları (handlers)
     register_io(application)
     register_nls(application)
     register_npr(application)
@@ -41,10 +53,11 @@ def main():
     register_fr(application)
     register_whale(application)
 
-    logger.info("Bot başladı.")
+    logger.info("✅ Bot başladı ve polling modunda çalışıyor...")
 
+    # ✅ Polling başlat
     application.run_polling()
 
 
-if __name__ == "__main__":
+if name == "main":
     main()
