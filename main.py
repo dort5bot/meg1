@@ -1,10 +1,11 @@
-# ======================================
+# =2=====================================
 # ✅ MegaBot Final - main.py
 # Ana bot başlatma, handler kayıtları, JobQueue görevleri
 # ======================================
 
 import logging
-import datetime
+import os
+from dotenv import load_dotenv
 from telegram.ext import ApplicationBuilder
 
 from handlers.io_handler import register_io
@@ -19,16 +20,24 @@ from handlers.whale_handler import register_whale
 
 from keep_alive import keep_alive
 
+# ✅ Logging ayarları
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     level=logging.INFO
 )
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)  # ✅ DOĞRU (alt tireli)
+
+# ✅ .env yükleme
+load_dotenv()
+
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+if not BOT_TOKEN:
+    raise ValueError("❌ BOT_TOKEN bulunamadı! Render Environment veya .env kontrol et.")
 
 def main():
-    keep_alive()  # Render Free ping sistemi
+    keep_alive()
 
-    application = ApplicationBuilder().token("BOT_TOKEN").build()     #"YOUR_BOT_TOKEN_HERE"    değiştirdim
+    application = ApplicationBuilder().token(BOT_TOKEN).build()
 
     # Komut kayıtları
     register_io(application)
@@ -41,8 +50,7 @@ def main():
     register_fr(application)
     register_whale(application)
 
-    logger.info("Bot başladı.")
-
+    logger.info("✅ Bot başladı ve polling modunda çalışıyor...")
     application.run_polling()
 
 
