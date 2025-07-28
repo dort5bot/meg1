@@ -1,39 +1,61 @@
 # ======================================
 # ✅ MegaBot Final - utils/csv_utils.py
-# CSV okuma/yazma, 60 kayıt sınırı, FR ve Whale CSV kayıtları
+# CSV okuma/yazma, favori listesi, Funding Rate & Whale kayıtları, API key yönetimi
 # ======================================
+import csv, json, os
 
-import csv, os, datetime
+DATA_DIR = "data"
+FAV_FILE = os.path.join(DATA_DIR, "fav_list.json")
+APIKEY_FILE = os.path.join(DATA_DIR, "apikeys.json")
 
-def save_csv(file, row):
+# ---------------- Favori coin listesi ----------------
+def _load_json(file):
+    if not os.path.exists(file):
+        return {}
+    with open(file, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+def _save_json(file, data):
+    with open(file, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2)
+
+def add_favorite(user_id, coins):
+    favs = _load_json(FAV_FILE)
+    favs[str(user_id)] = list(set(favs.get(str(user_id), []) + coins))
+    _save_json(FAV_FILE, favs)
+
+def remove_favorite(user_id, coins):
+    favs = _load_json(FAV_FILE)
+    favs[str(user_id)] = [c for c in favs.get(str(user_id), []) if c not in coins]
+    _save_json(FAV_FILE, favs)
+
+def list_favorites(user_id):
+    return _load_json(FAV_FILE).get(str(user_id), [])
+
+# ---------------- API key yönetimi ----------------
+def save_apikey(user_id, api_key, secret):
+    keys = _load_json(APIKEY_FILE)
+    keys[str(user_id)] = {"api_key": api_key, "secret": secret}
+    _save_json(APIKEY_FILE, keys)
+
+def delete_apikey(user_id):
+    keys = _load_json(APIKEY_FILE)
+    if str(user_id) in keys:
+        del keys[str(user_id)]
+        _save_json(APIKEY_FILE, keys)
+
+def get_apikey(user_id):
+    return _load_json(APIKEY_FILE).get(str(user_id), {})
+
+# ---------------- CSV kayıt örneği ----------------
+def append_csv(file, row, max_rows=60):
     rows = []
     if os.path.exists(file):
         with open(file, "r", newline="", encoding="utf-8") as f:
-            reader = list(csv.reader(f))
-            rows = reader[1:] if reader else []
-
+            rows = list(csv.reader(f))
     rows.append(row)
-    if len(rows) > 60:
-        rows = rows[-60:]
-
+    if len(rows) > max_rows:
+        rows = rows[-max_rows:]
     with open(file, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
-        writer.writerow(["timestamp"] + [f"c{i}" for i in range(len(row) - 1)])
         writer.writerows(rows)
-
-
-def save_ap_csv(data):
-    row = [datetime.datetime.utcnow().isoformat(), data["short_btc"], data["short_usd"], data["long_term"]]
-    save_csv("data/ap_history.csv", row)
-
-
-def save_funding_rate_csv(rates):
-    avg = sum([r["fundingRate"] for r in rates]) / len(rates) if rates else 0
-    row = [datetime.datetime.utcnow().isoformat(), avg]
-    save_csv("data/fr_history.csv", row)
-
-
-def save_whale_csv(alerts):
-    total_usd = sum([a["usd"] for a in alerts])
-    row = [datetime.datetime.utcnow().isoformat(), total_usd]
-    save_csv("data/whale_history.csv", row)
