@@ -1,19 +1,20 @@
+# ✅ Render Free ping sistemi
 # ======================================
 # ✅ MegaBot Final - keep_alive.py
-# Render Free için botun uyumasını önleyen ping sistemi
+# Render Free ping sistemi (botun uyumasını önler)
 # ======================================
-
 from flask import Flask
 from threading import Thread
+import os
 
-app = Flask("")
+app = Flask(__name__)
 
-@app.route("/")
+@app.route('/')
 def home():
     return "MegaBot is alive!"
 
 def run():
-    app.run(host="0.0.0.0", port=8080)
+    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 8080)))
 
 def keep_alive():
     t = Thread(target=run)
