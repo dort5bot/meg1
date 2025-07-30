@@ -42,7 +42,7 @@ def get_npr_report():
     return "📊 NPR Raporu (Mock)"
 
 
-def get_eft_report():
+def get_etf_report():
     return "📊 ETF & ABD Raporu (Mock)"
 
 
