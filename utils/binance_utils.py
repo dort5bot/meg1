@@ -1,91 +1,79 @@
-# ✅ Binance API'den veri çekme
+
 # ======================================
 # ✅ MegaBot Final - utils/binance_utils.py
-# Binance API'den veri çekme, IO, NLS, NPR, AP, fiyat, FR, Whale fonksiyonları
+# Binance verilerini çeken fonksiyonlar (IO, NLS, NPR, AP, Fiyat, FR, Whale)
 # ======================================
-import aiohttp
-import math
 
-BASE_URL = "https://api.binance.com/api/v3"
-FUTURES_URL = "https://fapi.binance.com/fapi/v1"
+import requests
 
-async def fetch_json(url):
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url, timeout=10) as response:
-            return await response.json()
+BASE_URL = "https://api.binance.com/api"
 
-# ---------------- IO (In-Out) ----------------
-async def get_io_report(coins):
-    results = []
+def get_price_report(coins):
+    msg = ""
     for coin in coins:
         symbol = coin.upper() + "USDT"
-        data = await fetch_json(f"{BASE_URL}/ticker/24hr?symbol={symbol}")
-        buy_ratio = round((float(data["quoteVolume"]) / float(data["volume"])) % 100, 2)
-        sell_ratio = 100 - buy_ratio
-        results.append(f"{coin.upper()}: 🟢{buy_ratio}% / 🔻{sell_ratio}%")
-    return "📊 IO Raporu\n" + "\n".join(results)
+        try:
+            res = requests.get(f"{BASE_URL}/v3/ticker/24hr", params={"symbol": symbol}).json()
+            price = float(res["lastPrice"])
+            change = float(res["priceChangePercent"])
+            vol = float(res["quoteVolume"]) / 1_000_000
 
-# ---------------- NLS (Balina yoğunluğu) ----------------
-async def get_nls_report(coins):
-    results = []
-    for coin in coins:
-        symbol = coin.upper() + "USDT"
-        data = await fetch_json(f"{FUTURES_URL}/depth?symbol={symbol}&limit=20")
-        bids = sum(float(x[1]) for x in data["bids"])
-        asks = sum(float(x[1]) for x in data["asks"])
-        ratio = round((bids / (bids + asks)) * 100, 2)
-        results.append(f"{coin.upper()}: 🟢{ratio}% Long / 🔻{100 - ratio}% Short")
-    return "📊 NLS Raporu\n" + "\n".join(results)
+            if int(price) == 0:
+                price_fmt = f"{price:.8f}"
+            else:
+                price_fmt = f"{price:.2f}"
 
-# ---------------- NPR (Nakit Piyasa Raporu) ----------------
-async def get_npr_report(interval="1h"):
-    data = await fetch_json(f"{FUTURES_URL}/premiumIndex")
-    shorts = [float(x["lastFundingRate"]) for x in data]
-    avg = round(sum(shorts) / len(shorts) * 100, 3)
-    trend = "🔻 Short Baskısı" if avg < 0 else "🟢 Long Baskısı"
-    return f"📊 NPR ({interval})\nOrtalama Funding Rate: {avg}%\n{trend}"
+            arrow = "🔼" if change > 0 else "🔻"
+            msg += f"{symbol.replace('USDT','')}: {price_fmt} {arrow}{change:.3f}% (Vol: {vol:.1f}M$)\n"
+        except:
+            msg += f"{coin.upper()}: Veri alınamadı\n"
+    return msg.strip()
 
-# ---------------- ETF & ABD ----------------
-async def get_eft_report():
-    return "📊 ETF & ABD Raporu\n(Bu örnek rapor, gerçek API entegre edilebilir.)"
 
-# ---------------- AP (Alt Strength Index) ----------------
-async def get_ap_report(mode="default"):
-    data = await fetch_json(f"{BASE_URL}/ticker/24hr")
-    altcoins = [x for x in data if x["symbol"].endswith("USDT") and not x["symbol"].startswith("BTC")]
-    avg_change = sum(float(x["priceChangePercent"]) for x in altcoins) / len(altcoins)
-    trend = "🟢 Yükseliş" if avg_change > 0 else "🔻 Düşüş"
-    return f"📊 AP (Altların Güç Endeksi)\nGenel Değişim: {round(avg_change,2)}%\nTrend: {trend}"
+def get_io_report():
+    return "📊 IO Raporu (Mock) - Gerçek hesaplama burada entegre edilecek."
 
-# ---------------- Price ----------------
-async def get_price_report(coins):
-    results = []
-    for coin in coins:
-        symbol = coin.upper() + "USDT"
-        data = await fetch_json(f"{BASE_URL}/ticker/24hr?symbol={symbol}")
-        price = float(data["lastPrice"])
-        change = float(data["priceChangePercent"])
-        vol = float(data["quoteVolume"]) / 1_000_000
-        arrow = "🔼" if change >= 0 else "🔻"
-        results.append(f"{coin.upper()}: {price} {arrow}{change}% (Vol: {round(vol,2)}M$)")
-    return "\n".join(results)
 
-# ---------------- FR (Funding Rate) ----------------
-async def get_fr_report(coins):
-    data = await fetch_json(f"{FUTURES_URL}/premiumIndex")
-    filtered = [x for x in data if not coins or x["symbol"].replace("USDT","").lower() in [c.lower() for c in coins]]
-    top10 = sorted(filtered, key=lambda x: abs(float(x["lastFundingRate"])), reverse=True)[:10]
-    lines = [f"{x['symbol']}: {round(float(x['lastFundingRate'])*100,3)}%" for x in top10]
-    avg = round(sum(float(x["lastFundingRate"]) for x in filtered) / len(filtered) * 100,3)
-    return f"📊 Funding Rate Raporu (Top10)\n" + "\n".join(lines) + f"\n\nGenel Ortalama: {avg}%"
+def get_nls_report():
+    return "📊 NLS Raporu (Mock)"
 
-# ---------------- Whale Alerts ----------------
-async def get_whale_report(coins):
-    results = []
-    for coin in coins if coins else ["BTC","ETH"]:
-        symbol = coin.upper() + "USDT"
-        data = await fetch_json(f"{FUTURES_URL}/trades?symbol={symbol}&limit=20")
-        big_trades = [float(x["qty"]) for x in data if float(x["quoteQty"])>1_000_000]
-        total = sum(big_trades)
-        results.append(f"{coin.upper()}: {round(total,2)} {coin.upper()} ({round(total*float(data[0]['price']),2)}$)")
-    return "🐋 Whale Alerts\n" + "\n".join(results)
+
+def get_npr_report():
+    return "📊 NPR Raporu (Mock)"
+
+
+def get_eft_report():
+    return "📊 ETF & ABD Raporu (Mock)"
+
+
+def get_ap_report():
+    # Mock değerler (örnek)
+    return {
+        "short_btc": 13.2,
+        "short_usd": 29.1,
+        "long_term": 57.5
+    }
+
+
+def get_funding_rate():
+    try:
+        res = requests.get("https://fapi.binance.com/fapi/v1/premiumIndex").json()
+        sorted_rates = sorted(res, key=lambda x: abs(float(x["lastFundingRate"])), reverse=True)[:10]
+        return [
+            {
+                "symbol": r["symbol"],
+                "fundingRate": float(r["lastFundingRate"])
+            }
+            for r in sorted_rates
+        ]
+    except:
+        return []
+
+
+def get_whale_alerts():
+    # NOT: Gerçek Whale Alerts için 3. parti API gerekir.
+    # Şimdilik MOCK veri
+    return [
+        {"symbol": "BTC", "amount": 120.5, "asset": "BTC", "usd": 7000000, "side": "buy"},
+        {"symbol": "ETH", "amount": 1500, "asset": "ETH", "usd": 2700000, "side": "sell"}
+    ]
