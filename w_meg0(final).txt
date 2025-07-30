@@ -1,4 +1,7 @@
- Funding Rate ve Whale Alerts özellikleri entegre edilmiş güncel MegaBot final dosya ağacını veriyorum. Ardından, istediğin sırayla dosyaların blok blok kodlarını, her dosyada belirttiğin açıklama başlıklarıyla paylaşacağım.
+cbot1
+olarak tekardan yüklendi
+----
+Funding Rate ve Whale Alerts özellikleri entegre edilmiş güncel MegaBot final dosya ağacını veriyorum. Ardından, istediğin sırayla dosyaların blok blok kodlarını, her dosyada belirttiğin açıklama başlıklarıyla paylaşacağım.
 
 1) MegaBot Final - Dosya Ağaç Yapısı (Funding Rate + Whale Alerts Dahil)
 
@@ -79,7 +82,7 @@ logger = logging.getLogger(__name__)
 def main():
     keep_alive()  # Render Free ping sistemi
 
-    application = ApplicationBuilder().token("YOUR_BOT_TOKEN_HERE").build()
+    application = ApplicationBuilder().token("BOT_TOKEN_HERE").build()
 
     # Komut kayıtları
     register_io(application)
