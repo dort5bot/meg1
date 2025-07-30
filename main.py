@@ -12,7 +12,7 @@ from telegram.ext import ApplicationBuilder
 from handlers.io_handler import register_io
 from handlers.nls_handler import register_nls
 from handlers.npr_handler import register_npr
-from handlers.eft_handler import register_eft
+from handlers.etf_handler import register_etf
 from handlers.ap_handler import register_ap
 from handlers.price_handler import register_price
 from handlers.p_handler import register_p
@@ -44,7 +44,7 @@ def main():
     register_io(application)
     register_nls(application)
     register_npr(application)
-    register_eft(application)
+    register_etf(application)
     register_ap(application)
     register_price(application)
     register_p(application)
